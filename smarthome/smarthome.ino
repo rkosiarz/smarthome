@@ -1,17 +1,5 @@
-
-
 // Enable debug prints to serial monitor
 #define MY_DEBUG 
-
-
-// Enable and select radio type attached
-//#define MY_RADIO_NRF24
-//#define MY_RADIO_RFM69
-
-// Set LOW transmit power level as default, if you have an amplified NRF-module and
-// power your radio separately with a good regulator you can turn up PA level. 
-//#define MY_RF24_PA_LEVEL RF24_PA_LOW
-
 // Enable serial gateway
 #define MY_GATEWAY_SERIAL
 
@@ -20,40 +8,10 @@
 #define MY_BAUD_RATE 38400
 #endif
 
-// Flash leds on rx/tx/err
-// #define MY_LEDS_BLINKING_FEATURE
-// Set blinking period
-// #define MY_DEFAULT_LED_BLINK_PERIOD 300
-
-// Inverses the behavior of leds
-// #define MY_WITH_LEDS_BLINKING_INVERSE
-
-// Enable inclusion mode
-#define MY_INCLUSION_MODE_FEATURE
-// Enable Inclusion mode button on gateway
-#define MY_INCLUSION_BUTTON_FEATURE
-
-// Inverses behavior of inclusion button (if using external pullup)
-//#define MY_INCLUSION_BUTTON_EXTERNAL_PULLUP
-
-// Set inclusion mode duration (in seconds)
-#define MY_INCLUSION_MODE_DURATION 60 
-// Digital pin used for inclusion mode button
-#define MY_INCLUSION_MODE_BUTTON_PIN  3 
-
-// Uncomment to override default HW configurations
-//#define MY_DEFAULT_ERR_LED_PIN 4  // Error led pin
-//#define MY_DEFAULT_RX_LED_PIN  6  // Receive led pin
-//#define MY_DEFAULT_TX_LED_PIN  5  // the PCB, on board LED
-
 #include <SPI.h>
 #include <MySensors.h>  
 #include <Bounce2.h>
 #include <DHT.h>
-
-// Enable repeater functionality for this node
-#define MY_REPEATER_FEATURE
-
 
 #define RELAY_1  4  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
 #define NUMBER_OF_RELAYS 1 // Total number of attached relays
@@ -67,7 +25,7 @@
 
 // Sleep time between sensor updates (in milliseconds)
 // Must be >1000ms for DHT22 and >2000ms for DHT11
-static const uint64_t UPDATE_INTERVAL = 60000;
+//static const uint64_t UPDATE_INTERVAL = 60000;
 
 // Force sending an update of the temperature after n sensor reads, so a controller showing the
 // timestamp of the last update doesn't show something like 3 hours in the unlikely case, that
@@ -91,7 +49,7 @@ float lastTemp;
 float lastHum;
 uint8_t nNoUpdatesTemp;
 uint8_t nNoUpdatesHum;
-bool metric = true;
+//bool metric = true;
 
 MyMessage msgHum(CHILD_ID_HUM, V_HUM);
 MyMessage msgTemp(CHILD_ID_TEMP, V_TEMP);
@@ -189,9 +147,6 @@ void loop() {
     // apply the offset before converting to something different than Celsius degrees
     temperature += SENSOR_TEMP_OFFSET;
 
-    if (!metric) {
-      temperature = dht.toFahrenheit(temperature);
-    }
     // Reset no updates counter
     nNoUpdatesTemp = 0;
     send(msgTemp.set(temperature, 1));
