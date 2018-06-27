@@ -51,9 +51,9 @@
 // Enable repeater functionality for this node
 #define MY_REPEATER_FEATURE
 
-#define RELAY_1  20  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
-#define BUTTON_PIN_1 21
-#define NUMBER_OF_RELAYS 17 // Total number of attached relays
+#define RELAY_1  22  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
+#define BUTTON_PIN_1 23
+#define NUMBER_OF_RELAYS 16 // Total number of attached relays
 
 #define RELAY_ON 1  // GPIO value to write to turn on attached relay
 #define RELAY_OFF 0 // GPIO value to write to turn off attached relay
@@ -62,27 +62,28 @@ Bounce debouncers[NUMBER_OF_RELAYS];
 MyMessage myMessages[NUMBER_OF_RELAYS];
 
 void before() {
-  //uzywam pinow po jednej stronie
-  for (int sensor=1, pin=RELAY_1; sensor<=NUMBER_OF_RELAYS; sensor++, pin+=2) {
+  //use even numbers for relay pins and use it as key to load state
+  for (int i=1, pin=RELAY_1; i<=NUMBER_OF_RELAYS; i++, pin+=2) {
     // Then set relay pins in output mode
     pinMode(pin, OUTPUT);   
     // Set relay to last known state (using eeprom storage) 
-    digitalWrite(pin, loadState(sensor)?RELAY_ON:RELAY_OFF);
+    digitalWrite(pin, loadState(pin)?RELAY_ON:RELAY_OFF);
   }
 }
 
 
 void setup() { 
   // Setup locally attached sensors
-  delay(10000);
+  delay(5000);
 
-//create table of debucers and attach to pin - piny po jednej stronie podwojnego slotu 
-    for(int i=0, pin=BUTTON_PIN_1; i<NUMBER_OF_RELAYS; i++, pin+=2){
+//create table of debucers and attach to pins
+//create table of messaages, use relay pin number as sensor id
+    for(int i=0, pin_button=BUTTON_PIN_1, pin_relay=RELAY_1; i<NUMBER_OF_RELAYS; i++, pin_button+=2, pin_relay+=2){
       debouncers[i] = Bounce();
-      debouncers[i].attach(pin);
+      debouncers[i].attach(pin_button);
       debouncers[i].interval(5);
-      pinMode(pin, INPUT_PULLUP);
-      myMessages[i] = MyMessage(i+1,V_LIGHT);
+      pinMode(pin_button, INPUT_PULLUP);
+      myMessages[i] = MyMessage(pin_relay,V_LIGHT);
     }
   presentation();
 }
@@ -90,24 +91,23 @@ void presentation()
 {   
   // Send the sketch version information to the gateway and Controller
   sendSketchInfo("Relay", "1.0");
-
-  for (int sensor=1; sensor<=NUMBER_OF_RELAYS; sensor++) {
-    // Register all sensors to gw (they will be created as child devices)
-    present(sensor, S_LIGHT);
+  for (int i=1, pin=RELAY_1; i<=NUMBER_OF_RELAYS; i++, pin+=2) {
+    // Register all sensors to gw (they will be created as child devices) use relay pin number as sensor id
+    present(pin, S_LIGHT);
   }
 }
 
 void loop() { 
-  // Send locally attached sensor data here 
+  // Send locally attached sensor data here, use relay pin number as sensor id
   for(int i=0, pin=RELAY_1; i<NUMBER_OF_RELAYS; i++, pin+=2){
     if (debouncers[i].update()) {
       // Get the update value.
       int value = debouncers[i].read();
       // Send in the new value.
-      if(value == HIGH){
-           saveState(i+1, !loadState(i+1));
-           digitalWrite(pin, loadState(i+1)?RELAY_ON:RELAY_OFF);
-           send(myMessages[i].set(loadState(i+1)));
+      if(value == LOW){
+           saveState(pin, !loadState(pin));
+           digitalWrite(pin, loadState(pin)?RELAY_ON:RELAY_OFF);
+           send(myMessages[i].set(loadState(pin)));
       }
     }
   }
@@ -116,9 +116,8 @@ void loop() {
 void receive(const MyMessage &message) {
   // We only expect one type of message from controller. But we better check anyway.
   if (message.type==V_LIGHT) {
-     int RELAY_TO_CHANGE = (message.sensor)*2-1+RELAY_1;
      // Change relay state
-     digitalWrite(RELAY_TO_CHANGE, message.getBool()?RELAY_ON:RELAY_OFF);
+     digitalWrite(message.sensor, message.getBool()?RELAY_ON:RELAY_OFF);
      // Store state in eeprom
      saveState(message.sensor, message.getBool());
      // Write some debug info
