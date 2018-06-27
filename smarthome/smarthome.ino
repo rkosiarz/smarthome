@@ -12,9 +12,10 @@
 #include <MySensors.h>  
 #include <Bounce2.h>
 #include <DHT.h>
+#include "Arduino.h"
 
-#define RELAY_1  4  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
-#define NUMBER_OF_RELAYS 1 // Total number of attached relays
+#define RELAY_1 30  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
+#define NUMBER_OF_RELAYS 10 // Total number of attached relays
 #define RELAY_ON 1  // GPIO value to write to turn on attached relay
 #define RELAY_OFF 0 // GPIO value to write to turn off attached relay
 #define TEMP_SALON 53
@@ -38,7 +39,7 @@ static const uint8_t FORCE_UPDATE_N_READS = 10;
 #define CHILD_ID_TEMP 1
 
 //Motion
-uint32_t SLEEP_TIME = 120000; // Sleep time between reports (in milliseconds)
+//uint32_t SLEEP_TIME = 120000; // Sleep time between reports (in milliseconds)
 #define MOTION_SENSOR 3   // The digital input you attached your motion sensor.  (Only 2 and 3 generates interrupt!)
 #define CHILD_ID_MOTION 1   // Id of the sensor child
 
@@ -49,7 +50,6 @@ float lastTemp;
 float lastHum;
 uint8_t nNoUpdatesTemp;
 uint8_t nNoUpdatesHum;
-//bool metric = true;
 
 MyMessage msgHum(CHILD_ID_HUM, V_HUM);
 MyMessage msgTemp(CHILD_ID_TEMP, V_TEMP);
@@ -57,6 +57,8 @@ MyMessage msgMotion(CHILD_ID_MOTION, V_TRIPPED);
 MyMessage msg(1, V_LIGHT);
 
 DHT dht;
+Bounce debouncer = Bounce();
+
 
 
 void before() { 
@@ -67,7 +69,9 @@ void before() {
     digitalWrite(pin, loadState(sensor)?RELAY_ON:RELAY_OFF);
   }
 }
-Bounce debouncer = Bounce();
+
+
+
 
 void setup() { 
   // Setup locally attached sensors
@@ -79,14 +83,20 @@ void setup() {
   debouncer.interval(5);
   presentation();
 
+
+
+
+
   dht.setup(TEMP_SALON); // set data pin of DHT sensor
-  if (UPDATE_INTERVAL <= dht.getMinimumSamplingPeriod()) {
-    Serial.println("Warning: UPDATE_INTERVAL is smaller than supported by the sensor!");
-  }
+//  if (UPDATE_INTERVAL <= dht.getMinimumSamplingPeriod()) {
+//    Serial.println("Warning: UPDATE_INTERVAL is smaller than supported by the sensor!");
+//  }
   // Sleep for the time of the minimum sampling period to give the sensor time to power up
   // (otherwise, timeout errors might occure for the first reading)
   sleep(dht.getMinimumSamplingPeriod());
 }
+
+
 void presentation()  
 {   
   // Send the sketch version information to the gateway and Controller
@@ -105,7 +115,7 @@ void presentation()
   present(CHILD_ID_HUM, S_HUM);
   present(CHILD_ID_TEMP, S_TEMP);
 
-  metric = getControllerConfig().isMetric;
+//  metric = getControllerConfig().isMetric;
 
 
   //motion
@@ -188,7 +198,7 @@ void loop() {
   send(msgMotion.set(tripped?"1":"0"));  // Send tripped value to gw
 
   // Sleep until interrupt comes in on motion sensor. Send update every two minute.
-  sleep(digitalPinToInterrupt(MOTION_SENSOR), CHANGE, SLEEP_TIME);
+//  sleep(digitalPinToInterrupt(MOTION_SENSOR), CHANGE, SLEEP_TIME);
 
 
  // Sleep for a while to save energy
@@ -204,8 +214,9 @@ void loop() {
 void receive(const MyMessage &message) {
   // We only expect one type of message from controller. But we better check anyway.
   if (message.type==V_LIGHT) {
+     int RELAY_TO_CHANGE = (message.sensor)*2-1+RELAY_1;
      // Change relay state
-     digitalWrite(message.sensor-1+RELAY_1, message.getBool()?RELAY_ON:RELAY_OFF);
+     digitalWrite(RELAY_TO_CHANGE, message.getBool()?RELAY_ON:RELAY_OFF);
      // Store state in eeprom
      saveState(message.sensor, message.getBool());
      // Write some debug info
