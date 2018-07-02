@@ -55,13 +55,11 @@
 
 
 #define RELAY_1  22  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
-#define RELAY_2  24
-#define NUMBER_OF_RELAYS 2 // Total number of attached relays
+#define NUMBER_OF_RELAYS 1 // Total number of attached relays
 #define RELAY_ON 1  // GPIO value to write to turn on attached relay
 #define RELAY_OFF 0 // GPIO value to write to turn off attached relay
 
 #define BUTTON_PIN 23
-#define BUTTON2_PIN 25
 
 
 void before() { 
@@ -73,22 +71,16 @@ void before() {
   }
 }
 Bounce debouncer = Bounce();
-Bounce debouncer2 = Bounce();
 
 void setup() { 
-  Serial.begin(9600);
   // Setup locally attached sensors
-//  delay(10000);
+  delay(10000);
    // Setup the button.
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(BUTTON2_PIN, INPUT_PULLUP);
   // After setting up the button, setup debouncer.
   debouncer.attach(BUTTON_PIN);
   debouncer.interval(5);
-  debouncer2.attach(BUTTON2_PIN);
-  debouncer2.interval(5);
-
-  presentation();
+  //presentation();
 }
 void presentation()  
 {   
@@ -102,19 +94,9 @@ void presentation()
 }
 
 MyMessage msg(1, V_LIGHT);
-MyMessage msg2(2, V_LIGHT);
 
 void loop() { 
   // Send locally attached sensor data here 
-//  int value2 = digitalRead(BUTTON2_PIN);
-//  
-//  if(value2 == LOW){
-//     Serial.println(value2);
-//     saveState(2, !loadState(2));
-//     digitalWrite(RELAY_2, loadState(2)?RELAY_ON:RELAY_OFF);
-//     send(msg2.set(loadState(2)));
-//     delay(1000);
-//  }
   if (debouncer.update()) {
     // Get the update value.
     int value = debouncer.read();
@@ -123,15 +105,7 @@ void loop() {
          saveState(1, !loadState(1));
          digitalWrite(RELAY_1, loadState(1)?RELAY_ON:RELAY_OFF);
          send(msg.set(loadState(1)));
-         }
-  }
-  if (debouncer2.update()) {
-      int value2 = debouncer2.read();
-    if(value2 == LOW){
-         saveState(2, !loadState(2));
-         digitalWrite(RELAY_2, loadState(2)?RELAY_ON:RELAY_OFF);
-         send(msg2.set(loadState(2)));
-         }
+    }
   }
 }
 
