@@ -58,7 +58,7 @@
 #define RELAY_ON 1  // GPIO value to write to turn on attached relay
 #define RELAY_OFF 0 // GPIO value to write to turn off attached relay
 
-Bounce debouncers[NUMBER_OF_RELAYS];
+Bounce deBouncers[NUMBER_OF_RELAYS];
 MyMessage myMessages[NUMBER_OF_RELAYS];
 
 void before() {
@@ -78,9 +78,9 @@ void setup() {
 
 //create table of debucers and attach to pin - piny po jednej stronie podwojnego slotu 
     for(int i=0, pin=BUTTON_PIN_1; i<NUMBER_OF_RELAYS; i++, pin+=2){
-      debouncers[i] = Bounce();
-      debouncers[i].attach(pin);
-      debouncers[i].interval(5);
+      deBouncers[i] = Bounce();
+      deBouncers[i].attach(pin);
+      deBouncers[i].interval(5);
       pinMode(pin, INPUT_PULLUP);
       myMessages[i] = MyMessage(i+1,V_LIGHT);
     }
@@ -100,9 +100,9 @@ void presentation()
 void loop() { 
   // Send locally attached sensor data here 
   for(int i=0, pin=RELAY_1; i<NUMBER_OF_RELAYS; i++, pin+=2){
-    if (debouncers[i].update()) {
+    if (deBouncers[i].update()) {
       // Get the update value.
-      int value = debouncers[i].read();
+      int value = deBouncers[i].read();
       // Send in the new value.
       if(value == HIGH){
            saveState(i+1, !loadState(i+1));
