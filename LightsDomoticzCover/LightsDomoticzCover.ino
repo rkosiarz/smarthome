@@ -16,9 +16,12 @@
 #define RELAY_OFF LOW // GPIO value to write to turn off attached relay
 
 #define COVER_PIN_1st 22
-#define COVER_COUNT 11
+#define COVER_COUNT 12
+#define COVER_PRESS_TIME 100
 
-
+#define GARAGE_GATE_PIN 53
+#define GATE_CHILD_ID 0
+MyMessage garageGate(GATE_CHILD_ID,V_TRIPPED);
 
 const long temp_interval = 1000; 
 unsigned long previousMillis = 0;
@@ -50,8 +53,8 @@ void before() {
       pinSensorRelay[i][1] = pin+1; // relay pin DOWN
     }
 
-    digitalWrite(52, HIGH);
-    digitalWrite(53, LOW);
+    pinMode(GARAGE_GATE_PIN, INPUT);
+    digitalWrite(GARAGE_GATE_PIN, HIGH);
 }
 
 void setup() { 
@@ -87,22 +90,22 @@ void loop() {
     }
   }
 
+    uint8_t value;
+    static uint8_t sentValue=2;
+ 
+    // Short delay to allow buttons to properly settle
+       
+    value = digitalRead(GARAGE_GATE_PIN);
 
+//    Serial.println("kontracton value " + value);
     
-
-//  for (int i=0, pin=COVER_PIN_1st; i < COVER_COUNT * 2 ; pin++, i++) {
-//    if (deBouncersCovers[i].update()) {
-//      // Get the update value.
-//      int value = deBouncersCovers[i].read();
-//      Serial.print("loop: " + value);
-//      // Send in the new value.
-//      if(value == LOW){
-//           saveState(pin, !loadState(pin));
-//           digitalWrite(pin, loadState(pin)?RELAY_ON:RELAY_OFF);
-//           send(myMessagesCovers[i].set(loadState(pin)));
-//      }
-//    }
-//  }
+    if (value != sentValue) {
+       Serial.print("kontracton value changed!!!!!: " + value);
+       // Value has changed from last transmission, send the updated value
+       send(garageGate.set(value==HIGH ? 1 : 0));
+       sentValue = value;
+    }
+    
 
   
 }  
@@ -127,7 +130,7 @@ void presentation()  {
     present(j, S_COVER);
   }
  
-
+  present(GATE_CHILD_ID, S_DOOR);
 
 }
 
@@ -160,9 +163,9 @@ void receive(const MyMessage &message) {
      //off down relay
      digitalWrite(getRelayDownPin(message.sensor), RELAY_OFF);
      
-     delay(500); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
+     delay(COVER_PRESS_TIME); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
      digitalWrite(getRelayUpPin(message.sensor), RELAY_ON);
-     delay(500); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
+     delay(COVER_PRESS_TIME); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
      digitalWrite(getRelayUpPin(message.sensor), RELAY_OFF);
 
   } 
@@ -170,16 +173,16 @@ void receive(const MyMessage &message) {
   if (message.type == V_DOWN) {
      // Change relay state
      digitalWrite(getRelayUpPin(message.sensor), RELAY_OFF);
-     delay(500); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
+     delay(COVER_PRESS_TIME); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
      digitalWrite(getRelayDownPin(message.sensor), RELAY_ON);
-     delay(500); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
+     delay(COVER_PRESS_TIME); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
      digitalWrite(getRelayDownPin(message.sensor), RELAY_OFF);
   }
 
     if (message.type == V_STOP) {
      // Change relay state
      digitalWrite(getRelayUpPin(message.sensor), RELAY_OFF);
-     //delay(500); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
+     //delay(COVER_PRESS_TIME); //opóźnienie 1s powoduje, że roleta najpierw się zatrzyma a potem przełączy się na podnoszenie
      digitalWrite(getRelayDownPin(message.sensor), RELAY_OFF);
      
   }
