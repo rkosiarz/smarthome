@@ -24,8 +24,6 @@ LandBoards_Digio128V2 Dio128;
 
 #define COVER_PIN_1st 0
 #define COVER_COUNT 12
-//#define COVER_PIN_1st 22
-//#define COVER_COUNT 12
 
 #define COVER_PRESS_TIME 100
 
@@ -52,8 +50,6 @@ unsigned long previousMillis = 0;
 Bounce deBouncers[NUMBER_OF_RELAYS];
 MyMessage myMessages[NUMBER_OF_RELAYS];
 
-//int pinSensorRelay [10][2] = { {1, 22, 23}, {2, 24, 25} ;
-
 int pinSensorRelay [COVER_COUNT][2]; 
 Bounce deBouncersCovers[COVER_COUNT + COVER_COUNT];
 MyMessage myMessagesCovers[COVER_COUNT + COVER_COUNT];
@@ -78,12 +74,10 @@ void setup() {
       // Then set relay pins in output mode
       Dio128.pinMode(pin, OUTPUT);
       Dio128.pinMode(pin+1, OUTPUT);
-      Serial.print("Dio128 pin: ");
-      Serial.println(pin);
+
       Dio128.digitalWrite(pin, RELAY_OFF);
       Dio128.digitalWrite(pin+1, RELAY_OFF);
       // fill pin to sensor mapping
-//      pinSensor[i] = pin;  //index is sensor id
       pinSensorRelay[i][0] = pin; // reley pin UP
       pinSensorRelay[i][1] = pin+1; // relay pin DOWN
     }
@@ -115,7 +109,6 @@ void loop() {
     if (deBouncers[i].update()) {
       // Get the update value.
       int value = deBouncers[i].read();
-      Serial.print("loop: " + value);
       // Send in the new value.
       if(value == LOW){
            saveState(pin, !loadState(pin));
@@ -125,30 +118,11 @@ void loop() {
     }
   }
 
-    uint8_t value;
-    static uint8_t sentValue=2;
- 
-    // Short delay to allow buttons to properly settle
-       
-    value = digitalRead(GARAGE_GATE_PIN);
-
-//    Serial.println("kontracton value " + value);
-    
-    if (value != sentValue) {
-       Serial.println("kontracton value changed!!!!!: " + value);
-       // Value has changed from last transmission, send the updated value
-       send(garageGate.set(value==HIGH ? 1 : 0));
-       sentValue = value;
-    }
-    
-    if(mainDoorBounce.update()) {
-      int mainDoorValue = mainDoorBounce.read();
-      Serial.println("main door!!!!!: " + mainDoorValue);
-      send(mainDoor.set(mainDoorValue==HIGH ? 1 : 0));
-    }
+  readGarageAndMainDoorSensors();
 
 
 //    readTempAndHum();
+
   
 }  
   
@@ -239,17 +213,39 @@ void receive(const MyMessage &message) {
   
 }
 
+void readGarageAndMainDoorSensors(){
+    uint8_t value;
+    static uint8_t sentValue=2;
+ 
+    // Short delay to allow buttons to properly settle
+       
+    value = digitalRead(GARAGE_GATE_PIN);
+
+//    Serial.println("kontracton value " + value);
+    
+    if (value != sentValue) {
+       Serial.println("kontracton value changed!!!!!: " + value);
+       // Value has changed from last transmission, send the updated value
+       send(garageGate.set(value==HIGH ? 1 : 0));
+       sentValue = value;
+    }
+    
+    if(mainDoorBounce.update()) {
+      int mainDoorValue = mainDoorBounce.read();
+      send(mainDoor.set(mainDoorValue==HIGH ? 1 : 0));
+    }
+
+}
 
 
 int getRelayUpPin(int sensor) {
-  Serial.print("dupa: ");
-  Serial.println(pinSensorRelay[sensor-1][0]);
   return pinSensorRelay[sensor-1][0];
 }
 
 int getRelayDownPin(int sensor) {
   return pinSensorRelay[sensor-1][1];
 }
+
 
 float last_h = -1;
 float last_t = -1;
