@@ -131,15 +131,14 @@ void loop() {
 void presentation()  {   
   Serial.println("presentation");  
   // Send the sketch version information to the gateway and Controller
-  sendSketchInfo("Relay and Cover and temp", "1.0");
+  sendSketchInfo("Relay and Cover and temp", "2.0");
+  
   for (int i=0, sensor=RELAY_1st; i < NUMBER_OF_RELAYS; i++, sensor+=2) {
     // Register all sensors to gw (they will be created as child devices) use relay pin number as sensor id
     present(sensor, S_LIGHT);
   }
-//  present(51, S_LIGHT);
 
   for (int j=1, sensor=COVER_PIN_1st; j <= COVER_COUNT; j++, sensor++) {
-//    wait(1000);
       // Register all sensors to gw (they will be created as child devices) use relay pin number as sensor id
     Serial.println("presentation S_COVER "); 
     Serial.println(j);   
@@ -149,11 +148,8 @@ void presentation()  {
   present(GATE_CHILD_ID, S_DOOR);
   present(MAIN_DOOR_CHILD_ID, S_DOOR);
 
-  present(0, S_HUM, "HUM");
-  present(1, S_TEMP, "TEMP");
-
-  present(CHILD_ID_HUM, S_HUM, "HUM");
-  present(CHILD_ID_TEMP, S_TEMP, "TEMP");
+  present(CHILD_ID_HUM, S_HUM, "HUM_GARAGE");
+  present(CHILD_ID_TEMP, S_TEMP, "TEMP_GARAGE");
 
 }
 
@@ -218,11 +214,8 @@ void readGarageAndMainDoorSensors(){
     static uint8_t sentValue=2;
  
     // Short delay to allow buttons to properly settle
-       
     value = digitalRead(GARAGE_GATE_PIN);
 
-//    Serial.println("kontracton value " + value);
-    
     if (value != sentValue) {
        Serial.println("kontracton value changed!!!!!: " + value);
        // Value has changed from last transmission, send the updated value
@@ -234,7 +227,6 @@ void readGarageAndMainDoorSensors(){
       int mainDoorValue = mainDoorBounce.read();
       send(mainDoor.set(mainDoorValue==HIGH ? 1 : 0));
     }
-
 }
 
 
