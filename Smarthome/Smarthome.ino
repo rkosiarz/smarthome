@@ -16,9 +16,9 @@
 LandBoards_Digio128V2 Dio128;
 
 
-#define RELAY_1st  48  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
-#define BUTTON_PIN_1st 49
-#define NUMBER_OF_RELAYS 2 // Total number of attached relays
+#define RELAY_1st  14  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
+#define BUTTON_PIN_1st 15
+#define NUMBER_OF_RELAYS 8 // Total number of attached relays
 #define RELAY_ON HIGH // GPIO value to write to turn on attached relay
 #define RELAY_OFF LOW // GPIO value to write to turn off attached relay
 
@@ -58,6 +58,13 @@ static const uint8_t FORCE_UPDATE_N_READS = 10;
 
 
 void before() {
+
+  for(int i=0, pin=RELAY_1st; i<NUMBER_OF_RELAYS; i++, pin+=2) {
+    // Then set relay pins in output mode
+    pinMode(pin, OUTPUT);   
+    // Set relay to last known state (using eeprom storage) 
+    digitalWrite(pin, loadState(pin)?RELAY_ON:RELAY_OFF);
+  }
 
 }
 
@@ -136,6 +143,7 @@ void presentation()  {
   for (int i=0, sensor=RELAY_1st; i < NUMBER_OF_RELAYS; i++, sensor+=2) {
     // Register all sensors to gw (they will be created as child devices) use relay pin number as sensor id
     present(sensor, S_LIGHT);
+    delay(50); 
   }
 
   for (int j=1, sensor=COVER_PIN_1st; j <= COVER_COUNT; j++, sensor++) {
@@ -143,27 +151,23 @@ void presentation()  {
     Serial.println("presentation S_COVER "); 
     Serial.println(j);   
     present(j, S_COVER);
+    delay(50);
   }
  
   present(GATE_CHILD_ID, S_DOOR);
+  delay(50);
   present(MAIN_DOOR_CHILD_ID, S_DOOR);
+  delay(50);
 
   present(CHILD_ID_HUM, S_HUM, "HUM_GARAGE");
+  delay(50);
   present(CHILD_ID_TEMP, S_TEMP, "TEMP_GARAGE");
+  delay(50);
 
 }
 
 void receive(const MyMessage &message) {
   // We only expect one type of message from controller. But we better check anyway.
-  Serial.print("Message type: "); 
-  Serial.println(message.type);
-  Serial.print("Message sesnsor: ");
-  Serial.println(message.sensor);
-  Serial.print("Pin: ");
-  Serial.println(getRelayUpPin(message.sensor));
-  Serial.println(getRelayDownPin(message.sensor));
-  Serial.print("Bool: ");
-  Serial.println(message.getBool());
   
   if (message.type==V_LIGHT) {
      // Change relay state
@@ -175,6 +179,9 @@ void receive(const MyMessage &message) {
      Serial.print(message.sensor);
      Serial.print(", New status: ");
      Serial.println(message.getBool());
+     Serial.print("Pin: ");
+     Serial.print(message.sensor);
+
   }  
 
   if (message.type == V_UP) {
