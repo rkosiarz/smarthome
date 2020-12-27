@@ -18,7 +18,11 @@ LandBoards_Digio128V2 Dio128;
 
 #define RELAY_1st  14  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
 #define BUTTON_PIN_1st 15
-#define NUMBER_OF_RELAYS 8 // Total number of attached relays
+#define NUMBER_OF_RELAYS 11 // Total number of attached relays
+
+#define RELAY_HEATER_1st 37
+#define NUMBER_OF_HEATER_RELAYS 13
+
 #define RELAY_ON HIGH // GPIO value to write to turn on attached relay
 #define RELAY_OFF LOW // GPIO value to write to turn off attached relay
 
@@ -49,6 +53,7 @@ unsigned long previousMillis = 0;
 
 Bounce deBouncers[NUMBER_OF_RELAYS];
 MyMessage myMessages[NUMBER_OF_RELAYS];
+MyMessage myMessagesHeaters[NUMBER_OF_HEATER_RELAYS];
 
 int pinSensorRelay [COVER_COUNT][2]; 
 Bounce deBouncersCovers[COVER_COUNT + COVER_COUNT];
@@ -57,9 +62,18 @@ MyMessage myMessagesCovers[COVER_COUNT + COVER_COUNT];
 static const uint8_t FORCE_UPDATE_N_READS = 10;
 
 
+
 void before() {
 
   for(int i=0, pin=RELAY_1st; i<NUMBER_OF_RELAYS; i++, pin+=2) {
+    // Then set relay pins in output mode
+    pinMode(pin, OUTPUT);   
+    // Set relay to last known state (using eeprom storage) 
+    digitalWrite(pin, loadState(pin)?RELAY_ON:RELAY_OFF);
+  }
+
+// set pins for heaters
+  for(int i=0, pin=RELAY_HEATER_1st; i<NUMBER_OF_HEATER_RELAYS; i++, pin++) {
     // Then set relay pins in output mode
     pinMode(pin, OUTPUT);   
     // Set relay to last known state (using eeprom storage) 
@@ -101,6 +115,11 @@ void setup() {
       myMessages[i] = MyMessage(pin_relay,V_LIGHT);
     }
 
+// relays for heater loops
+    for(int i=0, pin_heater_relay=RELAY_HEATER_1st; i < NUMBER_OF_HEATER_RELAYS; i++, pin_heater_relay++){
+      myMessagesHeaters[i] = MyMessage(pin_heater_relay,V_LIGHT);
+    }
+
     mainDoorBounce = Bounce();
     mainDoorBounce.attach(MAIN_DOOR_PIN);
     mainDoorBounce.interval(5);
@@ -126,10 +145,7 @@ void loop() {
   }
 
   readGarageAndMainDoorSensors();
-
-
-//    readTempAndHum();
-
+  readTempAndHum();
   
 }  
   
@@ -138,7 +154,7 @@ void loop() {
 void presentation()  {   
   Serial.println("presentation");  
   // Send the sketch version information to the gateway and Controller
-  sendSketchInfo("Relay and Cover and temp", "2.0");
+  sendSketchInfo("Relay and Cover and temp and heaters loops", "2.1");
   
   for (int i=0, sensor=RELAY_1st; i < NUMBER_OF_RELAYS; i++, sensor+=2) {
     // Register all sensors to gw (they will be created as child devices) use relay pin number as sensor id
@@ -152,6 +168,12 @@ void presentation()  {
     Serial.println(j);   
     present(j, S_COVER);
     delay(50);
+  }
+
+  for (int i=0, sensor=RELAY_HEATER_1st; i < NUMBER_OF_HEATER_RELAYS; i++, sensor++) {
+    // Register all sensors to gw (they will be created as child devices) use relay pin number as sensor id
+    present(sensor, S_LIGHT);
+    delay(50); 
   }
  
   present(GATE_CHILD_ID, S_DOOR);
